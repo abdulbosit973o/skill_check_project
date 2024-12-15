@@ -1,0 +1,1 @@
+// route uchun navigator ishlatib qo'ya qolaman ekan, sababi only push and pop

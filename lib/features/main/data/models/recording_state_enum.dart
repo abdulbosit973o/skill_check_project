@@ -1,0 +1,1 @@
+enum RecordingState { UnSet, Set, Recording, Paused, Stopped }
