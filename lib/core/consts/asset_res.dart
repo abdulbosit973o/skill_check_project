@@ -5,6 +5,7 @@ class AssetRes {
   static const String icMicrophone = "assets/icons/ic_microphone.png";
   static const String icStop = "assets/icons/ic_stop.png";
   static const String icPlay = "assets/icons/ic_play.png";
+  static const String icPause = "assets/icons/ic_pause.png";
   static const String icDelete = "assets/icons/ic_delete.png";
 
   // images

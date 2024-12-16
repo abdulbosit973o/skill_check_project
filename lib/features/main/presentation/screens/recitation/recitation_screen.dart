@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -11,12 +12,12 @@ import 'package:skill_check_project/core/consts/app_res.dart';
 import 'package:skill_check_project/core/consts/asset_res.dart';
 import 'package:skill_check_project/core/consts/color_res.dart';
 import 'package:skill_check_project/core/consts/style_res.dart';
+import 'package:skill_check_project/features/main/presentation/bloc/recitation/recitation_bloc.dart';
 import 'package:skill_check_project/features/main/presentation/screens/recitation/widgets/wave_widget/audio_wave_widget.dart';
 import 'package:skill_check_project/features/main/presentation/screens/recitation/widgets/wave_widget/wave_animation.dart';
 
 import '../../../data/models/recording_state_enum.dart';
 import '../../widgets/primary_app_bar.dart';
-import '../../widgets/primary_button.dart';
 import '../../widgets/primary_circle_button.dart';
 
 class RecitationScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class RecitationScreen extends StatefulWidget {
 }
 
 class _RecitationScreenState extends State<RecitationScreen> {
+  final _bloc = RecitationBloc();
   bool _recordIsOn = false;
   bool _recordFinished = false;
   final _audioRecorder = AudioRecorder();
@@ -44,6 +46,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
   }
 
   Future<void> _checkPermission() async {
+    await Permission.storage.request();
     bool hasPermission = await _audioRecorder.hasPermission();
     if (!hasPermission) {
       var status = await Permission.microphone.request();
@@ -58,7 +61,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
       }
     } else {
       setState(() {
-        AppRes.showSnackBar(context, "Microphone is ready.");
         _recordingState = RecordingState.Set;
       });
     }
@@ -91,20 +93,37 @@ class _RecitationScreenState extends State<RecitationScreen> {
   }
 
   Future<void> _startRecording() async {
-    Directory appDirectory = await getApplicationDocumentsDirectory();
-    String filePath =
-        '${appDirectory.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
+    try {
+      Directory appDirectory = await getApplicationDocumentsDirectory();
 
-    await _audioRecorder.start(
-        path: filePath, const RecordConfig(encoder: AudioEncoder.wav));
-    recorderController.record();
+      Directory recordingsDirectory =
+          Directory('${appDirectory.path}/Recordings');
+      if (!await recordingsDirectory.exists()) {
+        await recordingsDirectory.create();
+      }
 
-    setState(() {
-      _recordingState = RecordingState.Recording;
-      _seconds = 0;
-      _recordDuration = "00:00";
-    });
-    _startTimer();
+      Directory quranDirectory = Directory('${recordingsDirectory.path}/Quran');
+      if (!await quranDirectory.exists()) {
+        await quranDirectory.create();
+      }
+
+      String filePath =
+          '${quranDirectory.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      await _audioRecorder.start(
+          path: filePath, const RecordConfig(encoder: AudioEncoder.wav));
+      recorderController.record();
+
+      setState(() {
+        _recordingState = RecordingState.Recording;
+        _seconds = 0;
+        _recordDuration = "00:00";
+      });
+
+      _startTimer();
+    } catch (e) {
+      print('Recordingni boshlashda xatolik yuz berdi: $e');
+    }
   }
 
   Future<void> _pauseRecording() async {
@@ -126,36 +145,37 @@ class _RecitationScreenState extends State<RecitationScreen> {
   }
 
   Future<void> _stopAndSaveRecording() async {
+    if (_seconds < 3) {
+      AppRes.showSnackBar(context, "Qiroat kamida 10 soniya bo'lishi kerak.");
+      return;
+    }
+
     String? filePath = await _audioRecorder.stop();
     if (filePath != null) {
-      recorderController.stop();
       _recordFilePath = filePath;
-      // widget.onSaved(filePath);
+      AppRes.logger.i(_recordFilePath);
+
+      recorderController.stop();
+      setState(() {
+        _recordingState = RecordingState.Stopped;
+        _recordDuration = "00:00";
+        _seconds = 0;
+        _recordFinished = true;
+        _recordIsOn = false;
+      });
+      _stopTimer();
     }
-    setState(() {
-      _recordingState = RecordingState.Stopped;
-      _recordDuration = "00:00";
-      _seconds = 0;
-    });
-    _stopTimer();
   }
 
-  void _stopAndClearRecording() async {
-    await _audioRecorder.stop();
-    recorderController.stop();
-    setState(() {
-      _recordingState = RecordingState.UnSet;
-      _recordDuration = "00:00";
-      _seconds = 0;
-    });
-    _stopTimer();
-  }
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         _seconds++;
         _recordDuration = _formatDuration(_seconds);
+        if (_seconds >= 120) {
+          _stopAndSaveRecording();
+        }
       });
     });
   }
@@ -181,26 +201,55 @@ class _RecitationScreenState extends State<RecitationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          SafeArea(
-              child: primaryAppBar(context, onBackPressed: () {
-            Navigator.pop(context);
-          }, title: "Fotiha Surasini qiroat qilish")),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image.asset(
-              AssetRes.cardImage,
-              colorBlendMode: BlendMode.darken,
-              color: AppColors.background,
-            ),
-          ),
-          _recordFinished
-              ? _recordingFinishedWidget()
-              : _recordIsOn
-                  ? _recordingWidget()
-                  : _initialRecordWidget()
-        ],
+      body: BlocProvider.value(
+        value: _bloc,
+        child: BlocConsumer<RecitationBloc, RecitationState>(
+          listener: (context, state) {
+            if (state is RecitationError) {
+              AppRes.showSnackBar(context, state.errorText);
+            }
+            if (state is RecitationSuccess) {
+              AppRes.showSnackBar(context, "Muvaffaqiyatli qo'shildi !");
+              Navigator.pop(context, true);
+            }
+          },
+          builder: (context, state) {
+            return Column(
+              children: [
+                SafeArea(
+                    child: primaryAppBar(context, onBackPressed: () {
+                  Navigator.pop(context);
+                }, title: "Fotiha Surasini qiroat qilish")),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Image.asset(
+                    AssetRes.cardImage,
+                    colorBlendMode: BlendMode.darken,
+                    color: AppColors.background,
+                  ),
+                ),
+                _recordFinished
+                    ? RecordPlayerWidget(
+                        path: _recordFilePath!,
+                        onSendTap: () {
+                          _bloc.add(
+                              AddRecitationEvent(filePath: _recordFilePath!));
+                        },
+                        onDeleteTap: () {
+                          AppRes.logger.t("onDeleteTap ");
+                          setState(() {
+                            _recordIsOn = false;
+                            _recordFinished = false;
+                          });
+                        },
+                      )
+                    : _recordIsOn
+                        ? _recordingWidget()
+                        : _initialRecordWidget()
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -249,78 +298,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
         WaveAnimation(onTap: () {
           setState(() {
             _stopAndSaveRecording();
-            _recordFinished = true;
-            _recordIsOn = false;
           });
         })
-      ],
-    );
-  }
-
-  Widget _recordingFinishedWidget() {
-    return Column(
-      children: [
-        14.verticalSpace,
-        AudioWaveWidget(),
-        27.verticalSpace,
-        Text(
-          "00:26",
-          textAlign: TextAlign.center,
-          style: golosRegular.copyWith(fontSize: 18),
-        ),
-        27.verticalSpace,
-        Container(
-          padding: EdgeInsets.all(4.r),
-          height: 101.h,
-          decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 64,
-                padding: EdgeInsets.only(left: 20, right: 12),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(32))),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    PrimaryCircleButton(
-                        backgroundColor: AppColors.secondary,
-                        iconColor: AppColors.primary,
-                        iconPath: AssetRes.icPlay,
-                        onPressed: () {}),
-                    8.horizontalSpace,
-                    PrimaryButton(
-                      title: "Yuborish",
-                      height: 64,
-                      textStyle: golosMedium.copyWith(
-                          fontSize: 14, color: AppColors.white),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => RecitationScreen()),
-                        );
-                      },
-                    ),
-                    8.horizontalSpace,
-                    PrimaryCircleButton(
-                        backgroundColor: AppColors.secondary,
-                        iconColor: AppColors.iconColor,
-                        iconPath: AssetRes.icDelete,
-                        onPressed: () {
-                          setState(() {
-                            _recordFinished = false;
-                          });
-                        }),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
