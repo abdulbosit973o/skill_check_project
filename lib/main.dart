@@ -9,11 +9,6 @@ import 'core/consts/app_res.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  JustAudioBackground.init(
-    androidNotificationChannelId: 'com.example.audio',
-    androidNotificationChannelName: 'Audio playback',
-    androidNotificationOngoing: true,
-  );
   await SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   await initDependencies();
