@@ -36,14 +36,14 @@ class PrimaryButton extends StatelessWidget {
             shape: WidgetStateProperty.all(
               RoundedRectangleBorder(
                 borderRadius:
-                    BorderRadius.all(Radius.circular(height ?? 40 / 2)),
+                    BorderRadius.all(Radius.circular(height ?? 40.h / 2)),
               ),
             ),
             overlayColor: WidgetStateProperty.all(Colors.grey.withAlpha(40)),
             elevation: WidgetStateProperty.all(0), // Adjust elevation as needed
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            padding:  EdgeInsets.symmetric(horizontal: 6.w),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -51,7 +51,7 @@ class PrimaryButton extends StatelessWidget {
                   title,
                   style: textStyle ??
                       golosMedium.copyWith(
-                          fontSize: 15, color: AppColors.white),
+                          fontSize: 15.sp, color: AppColors.white),
                 ),
                 8.horizontalSpace,
                 if (hasIcon == true)

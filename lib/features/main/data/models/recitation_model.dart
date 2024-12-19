@@ -1,3 +1,5 @@
+import 'package:audio_waveforms/audio_waveforms.dart';
+
 class RecitationModel {
   final int? id;
   final String addedTime;
@@ -24,5 +26,21 @@ class RecitationModel {
   @override
   String toString() {
     return 'RecitationModel(id: $id, addedTime: $addedTime, filePath: $filePath)';
+  }
+}
+
+class RecitationUIModel {
+  final RecitationModel recitationModel;
+  bool isPlaying;
+  final PlayerController playerController;
+
+  RecitationUIModel({
+    required this.recitationModel,
+    this.isPlaying = false,
+    required this.playerController,
+  });
+
+  void togglePlaying() {
+    isPlaying = !isPlaying;
   }
 }

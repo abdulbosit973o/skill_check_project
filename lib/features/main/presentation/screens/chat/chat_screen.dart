@@ -1,3 +1,6 @@
+import 'package:audio_service/audio_service.dart';
+import 'package:audio_waveforms/audio_waveforms.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -21,11 +24,39 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _bloc = ChatBloc();
+  final List<PlayerController> playerControllers = [];
+  int? currentlyPlayingIndex;
 
   @override
   void initState() {
     _bloc.add(GetAllRecitationsEvent());
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    for (var controller in playerControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void onPlay(int index) {
+    if (currentlyPlayingIndex != null && currentlyPlayingIndex != index) {
+      // Pause the currently playing audio
+      playerControllers[currentlyPlayingIndex!].pausePlayer();
+    }
+    setState(() {
+      currentlyPlayingIndex = index;
+    });
+  }
+
+  void onPause(int index) {
+    if (currentlyPlayingIndex == index) {
+      setState(() {
+        currentlyPlayingIndex = null;
+      });
+    }
   }
 
   @override
@@ -62,10 +93,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           padding: const EdgeInsets.only(right: 31),
                           child: YoutubeVideoCardWidget(),
                         ),
-                        // 8.verticalSpace,
                         state is ChatGetRecitationsSuccess &&
                                 state.recitationList.isNotEmpty
-                            ?  _buildRecitationsList(state.recitationList)
+                            ? _buildRecitationList(state)
                             : 0.verticalSpace
                       ],
                     ),
@@ -91,18 +121,40 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildRecitationsList(List<RecitationModel> recitationList) {
+  Widget _buildRecitationList(ChatState state) {
+    if (state is! ChatGetRecitationsSuccess || state.recitationList.isEmpty) {
+      return 0.verticalSpace; // Return empty space if no data
+    }
+
     return ListView.separated(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        itemBuilder: (context, index) {
-          return RecitationItemWidget(
-            recitationModel: recitationList[index],
-          );
-        },
-        separatorBuilder: (_, __) {
-          return 8.verticalSpace;
-        },
-        itemCount: recitationList.length);
+      shrinkWrap: true,
+      padding: EdgeInsets.only(top: 8),
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: state.recitationList.length,
+      separatorBuilder: (_, __) => 8.verticalSpace,
+      itemBuilder: (context, index) {
+        if (playerControllers.length < state.recitationList.length) {
+          playerControllers.add(PlayerController());
+        }
+        return RecitationItemWidget(
+          recitationModel: state.recitationList[index],
+          playerController: playerControllers[index],
+          isPlaying: index == currentlyPlayingIndex, // Check if it's playing
+          onPlay: () {
+            setState(() {
+              if (currentlyPlayingIndex != null) {
+                playerControllers[currentlyPlayingIndex!].pausePlayer();
+              }
+              currentlyPlayingIndex = index;
+            });
+          },
+          onPause: () {
+            setState(() {
+              currentlyPlayingIndex = null; // Reset playing index
+            });
+          },
+        );
+      },
+    );
   }
 }

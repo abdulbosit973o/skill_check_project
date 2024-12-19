@@ -81,13 +81,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
         await _startRecording();
         break;
       case RecordingState.UnSet:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-            'Please allow recording from settings.',
-            style: golosMedium,
-          )),
-        );
+        // await openAppSettings();
+        AppRes.showSnackBar(context, "Yozib olish uchun ruhsat berilmagan.");
         break;
     }
   }
@@ -167,7 +162,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     }
   }
 
-
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
@@ -224,6 +218,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
                   padding: const EdgeInsets.all(8.0),
                   child: Image.asset(
                     AssetRes.cardImage,
+                    height: 463.h,
+                    fit: BoxFit.cover,
                     colorBlendMode: BlendMode.darken,
                     color: AppColors.background,
                   ),
@@ -270,16 +266,18 @@ class _RecitationScreenState extends State<RecitationScreen> {
               fontSize: 12, color: AppColors.secondaryTextColor),
         ),
         18.verticalSpace,
-        PrimaryCircleButton(
-          onPressed: () {
-            _onRecordButtonPressed();
-            setState(() {
-              _recordIsOn = true;
-            });
-          },
-          iconPath: AssetRes.icMicrophone,
-          width: 88.w,
-          height: 88.h,
+        Center(
+          child: PrimaryCircleButton(
+            onPressed: () {
+              _onRecordButtonPressed();
+              setState(() {
+                _recordIsOn = true;
+              });
+            },
+            iconPath: AssetRes.icMicrophone,
+            width: 88.w,
+            height: 88.h,
+          ),
         ),
       ],
     );

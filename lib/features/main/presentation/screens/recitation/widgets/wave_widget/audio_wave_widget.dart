@@ -120,90 +120,91 @@ class _RecordPlayerWidgetState extends State<RecordPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        14.verticalSpace,
-        Container(
-          height: 43.h,
-          margin: EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(10.r)),
-            color: AppColors.white,
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            height: 43.h,
+            margin: EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(10.r)),
+              color: AppColors.white,
+            ),
+            child: AudioFileWaveforms(
+              waveformData: waveformData,
+              waveformType: WaveformType.fitWidth,
+              playerWaveStyle: _playerWaveStyle,
+              enableSeekGesture: true,
+              continuousWaveform: true,
+              margin: EdgeInsets.zero,
+              padding: EdgeInsets.zero,
+              size: Size(double.infinity, 39.25.h),
+              playerController: playerController,
+            ),
           ),
-          child: AudioFileWaveforms(
-            waveformData: waveformData,
-            waveformType: WaveformType.fitWidth,
-            playerWaveStyle: _playerWaveStyle,
-            enableSeekGesture: true,
-            continuousWaveform: true,
-            margin: EdgeInsets.zero,
-            padding: EdgeInsets.zero,
-            size: Size(double.infinity, 39.25.h),
-            playerController: playerController,
+          Text(
+            currentDuration,
+            textAlign: TextAlign.center,
+            style: golosRegular.copyWith(fontSize: 18),
           ),
-        ),
-        27.verticalSpace,
-        Text(
-          currentDuration,
-          textAlign: TextAlign.center,
-          style: golosRegular.copyWith(fontSize: 18),
-        ),
-        27.verticalSpace,
-        Container(
-          padding: EdgeInsets.all(4.r),
-          height: 101.h,
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 64.h,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(32)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    PrimaryCircleButton(
-                      backgroundColor: AppColors.secondary,
-                      iconColor: AppColors.primary,
-                      iconPath: isPlaying ? AssetRes.icPause : AssetRes.icPlay,
-                      onPressed: _togglePlayPause,
-                    ),
-                    8.horizontalSpace,
-                    PrimaryButton(
-                      title: "Yuborish",
-                      width: MediaQuery.of(context).size.width - 152,
-                      height: 64.h,
-                      textStyle: golosMedium.copyWith(
-                        fontSize: 14,
-                        color: AppColors.white,
+          Container(
+            padding: EdgeInsets.all(4.r),
+            height: 95.h,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 64.h,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(32)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      PrimaryCircleButton(
+                        backgroundColor: AppColors.secondary,
+                        iconColor: AppColors.primary,
+                        iconPath:
+                            isPlaying ? AssetRes.icPause : AssetRes.icPlay,
+                        onPressed: _togglePlayPause,
                       ),
-                      onPressed: () async {
-                        await playerController.pausePlayer();
-                        widget.onSendTap();
-                      },
-                    ),
-                    8.horizontalSpace,
-                    PrimaryCircleButton(
-                      backgroundColor: AppColors.secondary,
-                      iconColor: AppColors.iconColor,
-                      iconPath: AssetRes.icDelete,
-                      onPressed: () async {
-                        await playerController.stopPlayer();
-                        widget.onDeleteTap();
-                      },
-                    ),
-                  ],
+                      8.horizontalSpace,
+                      PrimaryButton(
+                        title: "Yuborish",
+                        width: MediaQuery.of(context).size.width - 152,
+                        height: 64.h,
+                        textStyle: golosMedium.copyWith(
+                          fontSize: 14,
+                          color: AppColors.white,
+                        ),
+                        onPressed: () async {
+                          await playerController.pausePlayer();
+                          widget.onSendTap();
+                        },
+                      ),
+                      8.horizontalSpace,
+                      PrimaryCircleButton(
+                        backgroundColor: AppColors.secondary,
+                        iconColor: AppColors.iconColor,
+                        iconPath: AssetRes.icDelete,
+                        onPressed: () async {
+                          await playerController.stopPlayer();
+                          widget.onDeleteTap();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

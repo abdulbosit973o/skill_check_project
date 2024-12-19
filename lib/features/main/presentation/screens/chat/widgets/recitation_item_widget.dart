@@ -17,9 +17,19 @@ import '../../../widgets/primary_circle_button.dart';
 
 class RecitationItemWidget extends StatefulWidget {
   final RecitationModel recitationModel;
+  final PlayerController playerController;
+  final bool isPlaying;
+  final VoidCallback onPlay;
+  final VoidCallback onPause;
 
-  const RecitationItemWidget({super.key, required this.recitationModel});
-
+  const RecitationItemWidget({
+    super.key,
+    required this.recitationModel,
+    required this.playerController,
+    required this.isPlaying,
+    required this.onPlay,
+    required this.onPause,
+  });
   @override
   State<RecitationItemWidget> createState() => _RecitationItemWidgetState();
 }
@@ -32,7 +42,6 @@ class WaveformExtractionParams {
 }
 
 class _RecitationItemWidgetState extends State<RecitationItemWidget> {
-  final PlayerController playerController = PlayerController();
   late StreamSubscription<int> _durationSubscription;
   late StreamSubscription<void> _completionSubscription;
   int? fileLengthInDuration;
@@ -47,42 +56,27 @@ class _RecitationItemWidgetState extends State<RecitationItemWidget> {
     super.initState();
 
     _durationSubscription =
-        playerController.onCurrentDurationChanged.listen((duration) {
-          setState(() {
-            currentDuration = formatDuration(duration);
-          });
-        });
+        widget.playerController.onCurrentDurationChanged.listen((duration) {
+      setState(() {
+        currentDuration = formatDuration(duration);
+      });
+    });
 
-    // Listen to audio completion
-    _completionSubscription = playerController.onCompletion.listen((_) async {
-      await playerController.seekTo(0); // Reset to the start
+    _completionSubscription =
+        widget.playerController.onCompletion.listen((_) async {
+      await widget.playerController.seekTo(0); // Reset to the start
       setState(() {
         isPlaying = false;
         isFinished = true;
       });
-    });
-
-    playerController.onCurrentDurationChanged.listen((duration) {
-      AppRes.logger.f("Current Duration: $duration");
-    });
-
-    playerController.onCompletion.listen((_) {
-      AppRes.logger.f("Audio Completed");
-    });
-    playerController.onPlayerStateChanged.listen((state) {
-      AppRes.logger.f("Player State Changed: ${state.name}");
-      setState(() {
-        isPlaying = state == Wave.PlayerState.playing;
-      });
+      widget.onPause();
     });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    width = (MediaQuery
-        .sizeOf(context)
-        .width - 185);
+    width = (MediaQuery.sizeOf(context).width - 185);
     _initPlayer();
   }
 
@@ -90,20 +84,23 @@ class _RecitationItemWidgetState extends State<RecitationItemWidget> {
   late PlayerWaveStyle _playerWaveStyle;
 
   void _initPlayer() async {
-    // loadAudioAndGetDuration(widget.recitationModel.filePath);
     _playerWaveStyle = PlayerWaveStyle(
       scrollScale: 0.8,
       fixedWaveColor: AppColors.audioWaveUnfocusedColor,
       liveWaveColor: AppColors.audioWaveFocusedColor,
     );
     final samples = _playerWaveStyle.getSamplesForWidth(width);
-    await playerController.preparePlayer(
+    await widget.playerController.preparePlayer(
         shouldExtractWaveform: true,
         path: widget.recitationModel.filePath,
         noOfSamples: samples);
-    await playerController.setFinishMode(finishMode: FinishMode.pause);
+    fileLengthInDuration = widget.playerController.maxDuration;
+    setState(() {});
+    AppRes.logger.e(fileLengthInDuration);
+    await widget.playerController.setFinishMode(finishMode: FinishMode.pause);
 
-    playerController.updateFrequency = UpdateFrequency.high;
+    widget.playerController.updateFrequency = UpdateFrequency.high;
+
     try {
       final data = await compute(
         extractWaveformDataInBackground,
@@ -123,7 +120,7 @@ class _RecitationItemWidgetState extends State<RecitationItemWidget> {
   Future<List<double>> extractWaveformDataInBackground(
       WaveformExtractionParams params) async {
     final playerController = PlayerController();
-    return await playerController.extractWaveformData(
+    return await widget.playerController.extractWaveformData(
       path: params.path,
       noOfSamples: params.noOfSamples,
     );
@@ -133,22 +130,21 @@ class _RecitationItemWidgetState extends State<RecitationItemWidget> {
   void dispose() {
     _durationSubscription.cancel();
     _completionSubscription.cancel();
-    playerController.dispose();
+    widget.playerController.dispose();
     super.dispose();
   }
 
   void _togglePlayPause() async {
-    AppRes.logger.t(
-        "AUDIO duration $fileLengthInDuration\n${formatDuration(
-            fileLengthInDuration ?? 0)}");
     if (isFinished) {
-      await playerController.seekTo(0); // Reset to start
+      await widget.playerController.seekTo(0); // Reset to start
       isFinished = false;
     }
-    if (isPlaying) {
-      await playerController.pausePlayer();
+    if (widget.isPlaying) {
+      await widget.playerController.pausePlayer();
+      widget.onPause();
     } else {
-      await playerController.startPlayer();
+      widget.onPlay();
+      await widget.playerController.startPlayer();
     }
   }
 
@@ -168,7 +164,8 @@ class _RecitationItemWidgetState extends State<RecitationItemWidget> {
           Row(
             children: [
               PrimaryCircleButton(
-                  iconPath: isPlaying ? AssetRes.icPause : AssetRes.icPlay,
+                  iconPath:
+                      widget.isPlaying ? AssetRes.icPause : AssetRes.icPlay,
                   iconColor: AppColors.white,
                   height: 44.h,
                   width: 44.w,
@@ -184,11 +181,13 @@ class _RecitationItemWidgetState extends State<RecitationItemWidget> {
                 margin: EdgeInsets.zero,
                 padding: EdgeInsets.zero,
                 size: Size(width, 39.25.h),
-                playerController: playerController,
+                playerController: widget.playerController,
               ),
               12.horizontalSpace,
               Text(
-                formatDuration(playerController.maxDuration),
+                fileLengthInDuration != null
+                    ? formatDuration(fileLengthInDuration!)
+                    : "....",
                 style: golosRegular.copyWith(
                     fontSize: 12.sp, color: AppColors.backIconColor),
               )

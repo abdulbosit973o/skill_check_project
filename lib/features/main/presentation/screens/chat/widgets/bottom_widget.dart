@@ -11,7 +11,6 @@ class BottomWidget extends StatelessWidget {
 
   const BottomWidget({super.key, required this.onTap});
 
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -19,16 +18,15 @@ class BottomWidget extends StatelessWidget {
       height: 96.h,
       decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius:
-          BorderRadius.vertical(top: Radius.circular(32))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r))),
       child: Column(
         children: [
           Container(
             width: double.infinity,
-            height: 64,
-            padding: EdgeInsets.only(left: 20, right: 12),
+            height: 64.h,
+            padding: EdgeInsets.only(left: 20.w, right: 12.w),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(32)),
+              borderRadius: BorderRadius.all(Radius.circular(32.r)),
               color: AppColors.background,
             ),
             child: Row(
@@ -39,14 +37,11 @@ class BottomWidget extends StatelessWidget {
                   child: Text(
                     "Qiroatni tekshirish...",
                     style: golosMedium.copyWith(
-                        fontSize: 14, color: AppColors.timeColor),
+                        fontSize: 14.sp, color: AppColors.timeColor),
                   ),
                 ),
                 PrimaryButton(
-                  title: "Qiroat qilish",
-                  hasIcon: true,
-                  onPressed: onTap
-                )
+                    title: "Qiroat qilish", hasIcon: true, onPressed: onTap)
               ],
             ),
           ),

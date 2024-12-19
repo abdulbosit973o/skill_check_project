@@ -48,62 +48,71 @@ class _YoutubeVideoCardWidgetState extends State<YoutubeVideoCardWidget> {
           ClipRRect(
             borderRadius: BorderRadius.all(Radius.circular(10)),
             child: isPlayerActive
-                ? YoutubePlayer(controller: controller)
+                ? YoutubePlayer(controller: controller, bottomActions: [
+                    const SizedBox(width: 14.0),
+                    CurrentPosition(),
+                    const SizedBox(width: 8.0),
+                    ProgressBar(
+                      isExpanded: true, // Barni moslashuvchan qilish
+                    ),
+                    RemainingDuration(),
+                    const PlaybackSpeedButton(),
+                  ])
                 : GestureDetector(
-              onTap: () {
-                setState(() {
-                  isPlayerActive = true;
-                });
-              },
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    height: 200.h, // Player bilan bir xil balandlik
-                    color: AppColors.iconColor,
-                    child: thumbnailError
-                        ? Center(
-                      child: Text(
-                        "Thumbnail yuklab bo'lmadi",
-                        style: golosMedium.copyWith(fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                        : Image.network(
-                      thumbnailUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: 200.h,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        setState(() {
-                          thumbnailError = true;
-                        });
-                        return Center(
-                          child: Text(
-                            "Internet yo'q yoki xato yuz berdi",
-                            style: golosMedium.copyWith(
-                                fontSize: 14, color: Colors.red),
-                            textAlign: TextAlign.center,
+                    onTap: () {
+                      setState(() {
+                        isPlayerActive = true;
+                      });
+                    },
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          height: 200.h, // Player bilan bir xil balandlik
+                          color: AppColors.iconColor,
+                          child: thumbnailError
+                              ? Center(
+                                  child: Text(
+                                    "Thumbnail yuklab bo'lmadi",
+                                    style: golosMedium.copyWith(fontSize: 14),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                )
+                              : Image.network(
+                                  thumbnailUrl,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 200.h,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    setState(() {
+                                      thumbnailError = true;
+                                    });
+                                    return Center(
+                                      child: Text(
+                                        "Internet yo'q yoki xato yuz berdi",
+                                        style: golosMedium.copyWith(
+                                            fontSize: 14, color: Colors.red),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                        if (!thumbnailError)
+                          Icon(
+                            Icons.play_circle_fill,
+                            color: Colors.white,
+                            size: 50,
                           ),
-                        );
-                      },
+                      ],
                     ),
                   ),
-                  if (!thumbnailError)
-                    Icon(
-                      Icons.play_circle_fill,
-                      color: Colors.white,
-                      size: 50,
-                    ),
-                ],
-              ),
-            ),
           ),
           8.verticalSpace,
           Text(
